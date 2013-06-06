@@ -296,6 +296,9 @@
                 deferred = connection._deferral || $.Deferred(), // Check to see if there is a pre-existing deferral that's being built on, if so we want to keep using it
                 parser = window.document.createElement("a");
 
+            // Persist the deferral so that if start is called multiple times the same deferral is used.
+            connection._deferral = deferred;
+
             if ($.type(options) === "function") {
                 // Support calling with single callback parameter
                 callback = options;
@@ -317,7 +320,6 @@
             // If waitForPageLoad is true we then want to re-direct function call to the window load event
             if (!_pageLoaded && config.waitForPageLoad === true) {
                 _pageWindow.load(function () {
-                    connection._deferral = deferred;
                     connection.start(options, callback);
                 });
                 return deferred.promise();
@@ -325,10 +327,16 @@
 
             configureStopReconnectingTimeout(connection);
 
-            if (changeState(connection,
+            // If we're already connecting just return the same deferral as the original connection start
+            if (connection.state === signalR.connectionState.connecting) {
+                return deferred.promise();
+            }                
+            else if (changeState(connection,
                             signalR.connectionState.disconnected,
                             signalR.connectionState.connecting) === false) {
-                // Already started, just return
+                // We're not connecting so try and transition into connecting.
+                // If we fail to transition then we're either in connected or reconnecting.
+
                 deferred.resolve(connection);
                 return deferred.promise();
             }
@@ -408,6 +416,11 @@
                     return;
                 }
 
+                // The connection was aborted
+                if (connection.state === signalR.connectionState.disconnected) {
+                    return;
+                }
+
                 var transportName = transports[index],
                     transport = $.type(transportName) === "object" ? transportName : signalR.transports[transportName];
 
@@ -424,6 +437,7 @@
 
                     // The connection was aborted while initializing transports
                     if (connection.state === signalR.connectionState.disconnected) {
+                        transport.stop(connection);
                         return;
                     }
 
@@ -668,11 +682,22 @@
             /// <returns type="signalR" />
             var connection = this;
 
+            if (!_pageLoaded) {
+                // Can only stop connections after the page has loaded
+                _pageWindow.load(function () {
+                    connection.stop(async, notifyServer);
+                });
+
+                return;
+            }
+
             if (connection.state === signalR.connectionState.disconnected) {
                 return;
             }
 
             try {
+                connection.log("SignalR: Stopping connection.");
+
                 if (connection.transport) {
                     if (notifyServer !== false) {
                         connection.transport.abort(connection, async);
