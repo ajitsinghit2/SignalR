@@ -316,6 +316,8 @@
                 throw new Error("SignalR: Invalid transport(s) specified, aborting start.");
             }
 
+            connection._.config = config;
+
             // Check to see if start is being called prior to page load
             // If waitForPageLoad is true we then want to re-direct function call to the window load event
             if (!_pageLoaded && config.waitForPageLoad === true) {
@@ -330,7 +332,7 @@
             // If we're already connecting just return the same deferral as the original connection start
             if (connection.state === signalR.connectionState.connecting) {
                 return deferred.promise();
-            }                
+            }
             else if (changeState(connection,
                             signalR.connectionState.disconnected,
                             signalR.connectionState.connecting) === false) {
@@ -406,13 +408,11 @@
             initialize = function (transports, index) {
                 index = index || 0;
                 if (index >= transports.length) {
-                    if (!connection.transport) {
-                        // No transport initialized successfully
-                        $(connection).triggerHandler(events.onError, ["SignalR: No transport could be initialized successfully. Try specifying a different transport or none at all for auto initialization."]);
-                        deferred.reject("SignalR: No transport could be initialized successfully. Try specifying a different transport or none at all for auto initialization.");
-                        // Stop the connection if it has connected and move it into the disconnected state
-                        connection.stop();
-                    }
+                    // No transport initialized successfully
+                    $(connection).triggerHandler(events.onError, ["SignalR: No transport could be initialized successfully. Try specifying a different transport or none at all for auto initialization."]);
+                    deferred.reject("SignalR: No transport could be initialized successfully. Try specifying a different transport or none at all for auto initialization.");
+                    // Stop the connection if it has connected and move it into the disconnected state
+                    connection.stop();
                     return;
                 }
 
@@ -423,6 +423,8 @@
 
                 var transportName = transports[index],
                     transport = $.type(transportName) === "object" ? transportName : signalR.transports[transportName];
+
+                connection.transport = transport;
 
                 if (transportName.indexOf("_") === 0) {
                     // Private member
@@ -437,15 +439,12 @@
 
                     // The connection was aborted while initializing transports
                     if (connection.state === signalR.connectionState.disconnected) {
-                        transport.stop(connection);
                         return;
                     }
 
                     if (transport.supportsKeepAlive && connection.keepAliveData.activated) {
                         signalR.transports._logic.monitorKeepAlive(connection);
                     }
-
-                    connection.transport = transport;
 
                     changeState(connection,
                                 signalR.connectionState.connecting,
@@ -682,7 +681,8 @@
             /// <returns type="signalR" />
             var connection = this;
 
-            if (!_pageLoaded) {
+            // Verify that we should wait for page load to call stop.
+            if (!_pageLoaded && (!connection._.config || connection._.config.waitForPageLoad === true)) {
                 // Can only stop connections after the page has loaded
                 _pageWindow.load(function () {
                     connection.stop(async, notifyServer);
@@ -720,6 +720,7 @@
                 // Remove the ID and the deferral on stop, this is to ensure that if a connection is restarted it takes on a new id/deferral.
                 delete connection.id;
                 delete connection._deferral;
+                delete connection._.config;
             }
             finally {
                 changeState(connection, connection.state, signalR.connectionState.disconnected);
