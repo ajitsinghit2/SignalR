@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.AspNet.SignalR.Samples</RootNamespace>
     <AssemblyName>Microsoft.AspNet.SignalR.Hosting.AspNet.Samples</AssemblyName>
-    <UseIISExpress>true</UseIISExpress>
+    <UseIISExpress>false</UseIISExpress>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <IISExpressSSLPort />
@@ -390,7 +390,7 @@
           <AutoAssignPort>False</AutoAssignPort>
           <DevelopmentServerPort>40476</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:40476/</IISUrl>
+          <IISUrl>http://localhost/Microsoft.AspNet.SignalR.Hosting.AspNet.Samples</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

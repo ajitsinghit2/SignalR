@@ -5,10 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Hosting.Memory;
 using Microsoft.AspNet.SignalR.Tests.Common;
-using Microsoft.AspNet.SignalR.Tests.Common.Infrastructure;
-using Owin;
+using Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure;
 using Xunit;
 using Xunit.Extensions;
+using Microsoft.AspNet.SignalR.FunctionalTests;
+using Owin;
 
 namespace Microsoft.AspNet.SignalR.Tests
 {
@@ -17,7 +18,6 @@ namespace Microsoft.AspNet.SignalR.Tests
         [Theory]
         [InlineData(TransportType.LongPolling, MessageBusType.Default)]
         [InlineData(TransportType.LongPolling, MessageBusType.Fake)]
-        [InlineData(TransportType.LongPolling, MessageBusType.FakeMultiStream)]
         public void ReconnectFiresAfterHostShutdown(TransportType transportType, MessageBusType messageBusType)
         {
             MyReconnect conn = null;
